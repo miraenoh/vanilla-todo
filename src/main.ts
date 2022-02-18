@@ -2,6 +2,12 @@ import './style.css';
 
 import { SERVER_URL } from './config';
 import { Todo } from './entities/todo.entity';
+import { CreateTodoDTO } from './dto/create-todo.dto';
+
+let todos: Todo[] = [];
+
+const todoListEl = document.querySelector<HTMLUListElement>('#todo-list');
+const todoFormEl = document.querySelector<HTMLFormElement>('#todo-form');
 
 // 오늘 날짜 표시
 const paintDate = (): void => {
@@ -13,7 +19,38 @@ const alertError = (res: Response) => {
 	alert('HTTP ERROR' + res.status);
 };
 
-let todos: Todo[] = [];
+const createTodoElement = (todo: Todo): HTMLLIElement => {
+	// 투두 li
+	const todoEl: HTMLLIElement = document.createElement('li');
+	todoEl.classList.add('todo');
+	todoEl.id = todo.id.toString();
+
+	// input, title text 그룹 (left)
+	const leftSpanEl: HTMLSpanElement = document.createElement('span');
+	const todoCheckboxEl: HTMLInputElement = document.createElement('input');
+	todoCheckboxEl.setAttribute('type', 'checkbox');
+	const todoTitleEl: HTMLSpanElement = document.createElement('span');
+	todoTitleEl.classList.add('todo-title');
+	todoTitleEl.innerText = todo.title;
+	leftSpanEl.appendChild(todoCheckboxEl);
+	leftSpanEl.appendChild(todoTitleEl);
+
+	// button 글룹 (right)
+	const rightSpanEl: HTMLSpanElement = document.createElement('span');
+	const todoEditButton: HTMLButtonElement = document.createElement('button');
+	todoEditButton.classList.add('todo-edit-button');
+	todoEditButton.innerText = '수정';
+	const todoDeleteButton: HTMLButtonElement = document.createElement('button');
+	todoDeleteButton.classList.add('todo-edit-button');
+	todoDeleteButton.innerText = '삭제';
+	rightSpanEl.appendChild(todoEditButton);
+	rightSpanEl.appendChild(todoDeleteButton);
+
+	todoEl.appendChild(leftSpanEl);
+	todoEl.appendChild(rightSpanEl);
+
+	return todoEl;
+};
 
 // 투두 목록 읽어온 후 표시
 const paintTodos = async (): Promise<void> => {
@@ -25,38 +62,40 @@ const paintTodos = async (): Promise<void> => {
 
 	// 투두 그리기
 	for (const todo of todos) {
-		// 투두 li
-		const todoEl: HTMLLIElement = document.createElement('li');
-		todoEl.classList.add('todo');
-		todoEl.id = todo.id.toString();
-
-		// input, title text 그룹 (left)
-		const leftSpanEl: HTMLSpanElement = document.createElement('span');
-		const todoCheckboxEl: HTMLInputElement = document.createElement('input');
-		todoCheckboxEl.setAttribute('type', 'checkbox');
-		const todoTitleEl: HTMLSpanElement = document.createElement('span');
-		todoTitleEl.classList.add('todo-title');
-		todoTitleEl.innerText = todo.title;
-		leftSpanEl.appendChild(todoCheckboxEl);
-		leftSpanEl.appendChild(todoTitleEl);
-
-		// button 글룹 (right)
-		const rightSpanEl: HTMLSpanElement = document.createElement('span');
-		const todoEditButton: HTMLButtonElement = document.createElement('button');
-		todoEditButton.classList.add('todo-edit-button');
-		todoEditButton.innerText = '수정';
-		const todoDeleteButton: HTMLButtonElement = document.createElement('button');
-		todoDeleteButton.classList.add('todo-edit-button');
-		todoDeleteButton.innerText = '삭제';
-		rightSpanEl.appendChild(todoEditButton);
-		rightSpanEl.appendChild(todoDeleteButton);
-
-		todoEl.appendChild(leftSpanEl);
-		todoEl.appendChild(rightSpanEl);
-		const todoListEl = document.querySelector<HTMLUListElement>('#todo-list');
-		todoListEl ? todoListEl.appendChild(todoEl) : null;
+		todoListEl ? todoListEl.appendChild(createTodoElement(todo)) : null;
 	}
+};
+
+const addTodo = async (event: Event): Promise<void> => {
+	event.preventDefault();
+
+	// 추가할 todo 생성
+	const todoTitleInputEl = document.querySelector<HTMLInputElement>('#todo-title-input');
+	const todoTitle: string = todoTitleInputEl!.value;
+	const newTodoData: CreateTodoDTO = {
+		title: todoTitle,
+		completed: false
+	};
+	console.log(JSON.stringify(newTodoData));
+
+	// POST로 todo 추가 request 전송
+	const res: Response = await fetch(SERVER_URL + '/todos', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json;charset=utf-8'
+		},
+		body: JSON.stringify(newTodoData)
+	});
+
+	if (res.ok) {
+		// todo 추가 성공. 화면 update
+		todoTitleInputEl!.value = '';
+		const todo = await res.json();
+		todoListEl?.appendChild(createTodoElement(todo));
+	} else alertError(res);
 };
 
 paintDate();
 paintTodos();
+
+todoFormEl?.addEventListener('submit', addTodo);
