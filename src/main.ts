@@ -15,13 +15,29 @@ const paintDate = (): void => {
 	dateEl ? (dateEl.innerText = new Date().toISOString().split('T')[0]) : null;
 };
 
+const alertError = (res: Response): void => {
+	alert('HTTP ERROR' + res.status);
+};
+
 const updateNLeftTodos = (): void => {
 	const nleftTodosEl = document.querySelector<HTMLSpanElement>('#n-left-todos');
 	nleftTodosEl ? (nleftTodosEl.innerHTML = todos.length.toString()) : null;
 };
 
-const alertError = (res: Response): void => {
-	alert('HTTP ERROR' + res.status);
+const deleteTodo = async (event: Event): Promise<void> => {
+	if (event.target instanceof HTMLElement) {
+		// event가 발생한 버튼에 해당하는 todo element 추출
+		const todoEl: HTMLElement = event.target.parentElement!.parentElement!;
+
+		// DELETE request로 해당 todo 삭제
+		const res = await fetch(`${SERVER_URL}/todos/${todoEl.id}`, { method: 'DELETE' });
+		if (res.ok) {
+			// todo 삭제 성공. 화면 update
+			todos = todos.filter((todo) => todo.id !== parseInt(todoEl.id));
+			todoEl.remove();
+			updateNLeftTodos();
+		} else alertError(res);
+	}
 };
 
 const createTodoElement = (todo: Todo): HTMLLIElement => {
@@ -43,10 +59,9 @@ const createTodoElement = (todo: Todo): HTMLLIElement => {
 	// button 글룹 (right)
 	const rightSpanEl: HTMLSpanElement = document.createElement('span');
 	const todoEditButton: HTMLButtonElement = document.createElement('button');
-	todoEditButton.classList.add('todo-edit-button');
 	todoEditButton.innerText = '수정';
 	const todoDeleteButton: HTMLButtonElement = document.createElement('button');
-	todoDeleteButton.classList.add('todo-edit-button');
+	todoDeleteButton.addEventListener('click', deleteTodo);
 	todoDeleteButton.innerText = '삭제';
 	rightSpanEl.appendChild(todoEditButton);
 	rightSpanEl.appendChild(todoDeleteButton);
@@ -60,7 +75,7 @@ const createTodoElement = (todo: Todo): HTMLLIElement => {
 // 투두 목록 읽어온 후 표시
 const paintTodos = async (): Promise<void> => {
 	// 투두 읽어오기
-	const res: Response = await fetch(SERVER_URL + '/todos');
+	const res: Response = await fetch(`${SERVER_URL}/todos`);
 	if (res.ok) {
 		todos = await res.json();
 	} else alertError(res);
@@ -84,7 +99,7 @@ const addTodo = async (event: Event): Promise<void> => {
 	console.log(JSON.stringify(newTodoData));
 
 	// POST로 todo 추가 request 전송
-	const res: Response = await fetch(SERVER_URL + '/todos', {
+	const res: Response = await fetch(`${SERVER_URL}/todos`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json;charset=utf-8'
