@@ -15,7 +15,12 @@ const paintDate = (): void => {
 	dateEl ? (dateEl.innerText = new Date().toISOString().split('T')[0]) : null;
 };
 
-const alertError = (res: Response) => {
+const updateNLeftTodos = (): void => {
+	const nleftTodosEl = document.querySelector<HTMLSpanElement>('#n-left-todos');
+	nleftTodosEl ? (nleftTodosEl.innerHTML = todos.length.toString()) : null;
+};
+
+const alertError = (res: Response): void => {
 	alert('HTTP ERROR' + res.status);
 };
 
@@ -91,11 +96,13 @@ const addTodo = async (event: Event): Promise<void> => {
 		// todo 추가 성공. 화면 update
 		todoTitleInputEl!.value = '';
 		const todo = await res.json();
+		todos.push(todo);
 		todoListEl?.appendChild(createTodoElement(todo));
+		updateNLeftTodos();
 	} else alertError(res);
 };
 
 paintDate();
-paintTodos();
+paintTodos().then(updateNLeftTodos);
 
 todoFormEl?.addEventListener('submit', addTodo);
