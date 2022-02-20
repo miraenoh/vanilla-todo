@@ -10,17 +10,11 @@
 	<body>
 		<div id="app">
 			<div class="container">
-				<div class="header box">
-					<h1 id="date"></h1>
-					할 일이 <span id="n-left-todos"></span>개 남았습니다.
-				</div>
+				<header class="box"></header>
 				<hr />
-				<ul id="todo-list" class="box"></ul>
-				<div class="box">
-					<form id="todo-form">
-						<input type="text" name="todo-title" id="todo-title-input" required />
-					</form>
-				</div>
+				<main class="box">
+					<ul id="todo-list"></ul>
+				</main>
 			</div>
 		</div>
 		<script type="module" src="/src/main.ts"></script>
