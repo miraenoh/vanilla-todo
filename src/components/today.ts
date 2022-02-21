@@ -4,17 +4,14 @@ export default class Today {
 	protected date: string;
 
 	constructor() {
-		const date: Date = new Date();
+		const date = new Date();
 		this.date = new Date().toISOString().split('T')[0];
-		this.date = `${date.getFullYear()}-${this.leftPad(date.getMonth())}-${this.leftPad(
-			date.getDate()
-		)}`;
+		this.date = `${date.getFullYear()}-${date.getMonth().toString().padStart(2, '0')}-${date
+			.getDate()
+			.toString()
+			.padStart(2, '0')}`;
 
 		this.el = document.createElement('h1');
 		this.el.textContent = this.date;
-	}
-
-	protected leftPad(n: number): string {
-		return `${n >= 10 ? n : '0' + n}`;
 	}
 }

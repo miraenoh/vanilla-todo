@@ -1,12 +1,11 @@
 import { SERVER_URL } from '../config';
-import { TodoData } from '../entities/todo-data.entity';
+import { ITodo } from '../entities/todo-data.entity';
 import Todo from './todo';
 
 export default class TodoList {
 	public todosEl: HTMLUListElement;
 	public leftTodosEl: HTMLSpanElement;
 	public formEl: HTMLFormElement;
-	protected inputEl: HTMLInputElement;
 
 	protected leftTodos: number;
 
@@ -14,7 +13,6 @@ export default class TodoList {
 		this.todosEl = document.createElement('ul');
 		this.leftTodosEl = document.createElement('span');
 		this.formEl = document.createElement('form');
-		this.inputEl = document.createElement('input');
 
 		this.leftTodos = 0;
 
@@ -29,11 +27,24 @@ export default class TodoList {
 			.finally(() => {
 				this.updateLeftTodosEl();
 				this.createFormElement();
+
+				this.todosEl.addEventListener('click', this.clickEventHandler);
+				this.formEl.addEventListener('submit', this.addTodo);
 			});
 	}
 
+	// TODO 1. eventListener를 todosEl에 등록?
+	protected clickEventHandler = (event: Event) => {
+		const targetEl = event.target as HTMLElement;
+		if (targetEl.classList.contains('todo-delete-button')) {
+			this.deleteTodo(targetEl.parentElement?.parentElement as HTMLLIElement);
+		}
+	};
+
 	protected addTodo = async (event: Event): Promise<void> => {
 		event.preventDefault();
+
+		const inputEl = document.querySelector('#todo-title-input') as HTMLInputElement;
 
 		const res: Response = await fetch(`${SERVER_URL}/todos`, {
 			method: 'POST',
@@ -41,16 +52,15 @@ export default class TodoList {
 				'Content-Type': 'application/json;charset=utf-8'
 			},
 			body: JSON.stringify({
-				title: this.inputEl.value,
+				title: inputEl.value,
 				completed: false
 			})
 		});
-
 		if (res.ok) {
-			const todoData: TodoData = await res.json();
-			this.increaseLeftTodos();
+			const todoData: ITodo = await res.json();
+			this.leftTodos++;
 
-			this.inputEl.value = '';
+			inputEl.value = '';
 			this.todosEl.append(new Todo(todoData, this).el);
 			this.updateLeftTodosEl();
 		} else console.error(res);
@@ -59,14 +69,14 @@ export default class TodoList {
 	public deleteTodo = async (todoEl: HTMLLIElement): Promise<void> => {
 		const res: Response = await fetch(`${SERVER_URL}/todos/${todoEl.id}`, { method: 'DELETE' });
 		if (res.ok) {
-			this.decreaseLeftTodos();
+			this.leftTodos--;
 			todoEl.remove();
 
 			this.updateLeftTodosEl();
 		} else console.error(res);
 	};
 
-	protected async getTodosData(): Promise<TodoData[]> {
+	protected async getTodosData(): Promise<ITodo[]> {
 		const res: Response = await fetch(`${SERVER_URL}/todos`);
 		if (res.ok) {
 			return await res.json();
@@ -76,25 +86,17 @@ export default class TodoList {
 		}
 	}
 
-	public increaseLeftTodos(): void {
-		this.leftTodos++;
-	}
-
-	public decreaseLeftTodos(): void {
-		this.leftTodos--;
-	}
-
 	protected updateLeftTodosEl(): void {
 		this.leftTodosEl.textContent = `할 일이 ${this.leftTodos}개 남았습니다.`;
 	}
 
 	protected createFormElement(): void {
-		this.inputEl.id = 'todo-title-input';
-		this.inputEl.setAttribute('type', 'text');
-		this.inputEl.setAttribute('required', 'true');
-
 		this.formEl.classList.add('box');
-		this.formEl.append(this.inputEl);
-		this.formEl.addEventListener('submit', this.addTodo);
+		this.formEl.insertAdjacentHTML(
+			'afterbegin',
+			`
+		<input id="todo-title-input" type="text" required />
+		`
+		);
 	}
 }
