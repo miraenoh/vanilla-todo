@@ -8,7 +8,7 @@ export default class TodoList {
 	public formEl: HTMLFormElement;
 	protected inputEl: HTMLInputElement;
 
-	protected todos: TodoData[];
+	protected leftTodos: number;
 
 	constructor() {
 		this.todosEl = document.createElement('ul');
@@ -16,11 +16,11 @@ export default class TodoList {
 		this.formEl = document.createElement('form');
 		this.inputEl = document.createElement('input');
 
-		this.todos = [];
+		this.leftTodos = 0;
 
 		this.getTodosData()
 			.then((todosData) => {
-				this.todos = todosData;
+				this.leftTodos = todosData.length;
 
 				for (const todoData of todosData) {
 					this.todosEl.append(new Todo(todoData, this).el);
@@ -48,7 +48,7 @@ export default class TodoList {
 
 		if (res.ok) {
 			const todoData: TodoData = await res.json();
-			this.todos.push(todoData);
+			this.increaseLeftTodos();
 
 			this.inputEl.value = '';
 			this.todosEl.append(new Todo(todoData, this).el);
@@ -59,7 +59,7 @@ export default class TodoList {
 	public deleteTodo = async (todoEl: HTMLLIElement): Promise<void> => {
 		const res: Response = await fetch(`${SERVER_URL}/todos/${todoEl.id}`, { method: 'DELETE' });
 		if (res.ok) {
-			this.todos = this.todos.filter((todoData) => todoData.id != parseInt(todoEl.id));
+			this.decreaseLeftTodos();
 			todoEl.remove();
 
 			this.updateLeftTodosEl();
@@ -76,8 +76,16 @@ export default class TodoList {
 		}
 	}
 
+	public increaseLeftTodos(): void {
+		this.leftTodos++;
+	}
+
+	public decreaseLeftTodos(): void {
+		this.leftTodos--;
+	}
+
 	protected updateLeftTodosEl(): void {
-		this.leftTodosEl.textContent = `할 일이 ${this.todos.length}개 남았습니다.`;
+		this.leftTodosEl.textContent = `할 일이 ${this.leftTodos}개 남았습니다.`;
 	}
 
 	protected createFormElement(): void {
