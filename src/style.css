@@ -43,6 +43,11 @@ ul {
 	margin: 0 0.5rem;
 }
 
+.todo-completed .todo-title {
+	color: #c0c0c0;
+	text-decoration: line-through;
+}
+
 #todo-title-input {
 	width: 100%;
 	height: 2rem;

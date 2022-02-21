@@ -4,7 +4,7 @@ import TodoList from './todo-list';
 export default class Todo {
 	public el: HTMLLIElement;
 
-	protected data: ITodo;
+	public data: ITodo;
 	protected parent: TodoList;
 
 	constructor(data: ITodo, parent: TodoList) {
@@ -12,6 +12,7 @@ export default class Todo {
 		this.parent = parent;
 
 		this.el = this.createEl();
+		if (this.data.completed) this.el.classList.add('todo-completed');
 	}
 
 	protected createEl(): HTMLLIElement {
@@ -22,7 +23,7 @@ export default class Todo {
 			'afterbegin',
 			`
 		<span>
-			<input type="checkbox" />
+			<input type="checkbox" class="todo-checkbox" ${this.data.completed ? 'checked' : ''} />
 			<span class="todo-title">${this.data.title}</span>
 		</span>
 		<span>
@@ -33,5 +34,17 @@ export default class Todo {
 		);
 
 		return todoEl;
+	}
+
+	public complete(): void {
+		this.data.completed = true;
+
+		this.el.classList.add('todo-completed');
+	}
+
+	public unComplete(): void {
+		this.data.completed = false;
+
+		this.el.classList.remove('todo-completed');
 	}
 }

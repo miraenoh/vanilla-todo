@@ -7,37 +7,41 @@ export default class TodoList {
 	public leftTodosEl: HTMLSpanElement;
 	public formEl: HTMLFormElement;
 
-	protected leftTodos: number;
+	protected todos: { [id: number]: Todo };
 
 	constructor() {
 		this.todosEl = document.createElement('ul');
 		this.leftTodosEl = document.createElement('span');
 		this.formEl = document.createElement('form');
 
-		this.leftTodos = 0;
+		this.todos = [];
 
 		this.getTodosData()
 			.then((todosData) => {
-				this.leftTodos = todosData.length;
-
 				for (const todoData of todosData) {
-					this.todosEl.append(new Todo(todoData, this).el);
+					this.createTodo(todoData);
 				}
 			})
 			.finally(() => {
 				this.updateLeftTodosEl();
 				this.createFormElement();
 
+				// TODO 1. eventListener를 todosEl에 등록?
 				this.todosEl.addEventListener('click', this.clickEventHandler);
 				this.formEl.addEventListener('submit', this.addTodo);
 			});
 	}
 
-	// TODO 1. eventListener를 todosEl에 등록?
 	protected clickEventHandler = (event: Event) => {
 		const targetEl = event.target as HTMLElement;
+		const todoEl = targetEl.parentElement?.parentElement as HTMLLIElement;
+
 		if (targetEl.classList.contains('todo-delete-button')) {
-			this.deleteTodo(targetEl.parentElement?.parentElement as HTMLLIElement);
+			// Delete button clicked
+			this.deleteTodo(todoEl);
+		} else if (targetEl instanceof HTMLInputElement && targetEl.type === 'checkbox') {
+			// Checkbox clicked
+			this.updateTodoCompleted(todoEl, targetEl.checked);
 		}
 	};
 
@@ -58,20 +62,49 @@ export default class TodoList {
 		});
 		if (res.ok) {
 			const todoData: ITodo = await res.json();
-			this.leftTodos++;
+			this.createTodo(todoData);
 
 			inputEl.value = '';
-			this.todosEl.append(new Todo(todoData, this).el);
 			this.updateLeftTodosEl();
 		} else console.error(res);
 	};
 
-	public deleteTodo = async (todoEl: HTMLLIElement): Promise<void> => {
+	protected createTodo(todoData: ITodo): void {
+		const todo = new Todo(todoData, this);
+		this.todos[todoData.id] = todo;
+
+		this.todosEl.append(todo.el);
+	}
+
+	protected updateTodoCompleted = async (
+		todoEl: HTMLLIElement,
+		completed: boolean
+	): Promise<void> => {
+		const res: Response = await fetch(`${SERVER_URL}/todos/${todoEl.id}`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json;charset=utf-8'
+			},
+			body: JSON.stringify({
+				completed
+			})
+		});
+
+		if (res.ok) {
+			const todo = this.todos[+todoEl.id];
+			completed ? todo.complete() : todo.unComplete();
+
+			this.updateLeftTodosEl();
+		} else console.error(res);
+	};
+
+	protected deleteTodo = async (todoEl: HTMLLIElement): Promise<void> => {
 		const res: Response = await fetch(`${SERVER_URL}/todos/${todoEl.id}`, { method: 'DELETE' });
 		if (res.ok) {
-			this.leftTodos--;
-			todoEl.remove();
+			delete this.todos[+todoEl.id];
+			console.log(this.todos);
 
+			todoEl.remove();
 			this.updateLeftTodosEl();
 		} else console.error(res);
 	};
@@ -87,7 +120,11 @@ export default class TodoList {
 	}
 
 	protected updateLeftTodosEl(): void {
-		this.leftTodosEl.textContent = `할 일이 ${this.leftTodos}개 남았습니다.`;
+		/* TODO 2. 이렇게 계산 할지 leftTodo를 property로 만들어서 ++, -- 할지?
+		이렇게 하려면 Todo.data를 public으로 해야 하는데 괜찮나?
+		*/
+		const leftTodos = Object.values(this.todos).filter((todo) => !todo.data.completed).length;
+		this.leftTodosEl.textContent = `할 일이 ${leftTodos}개 남았습니다.`;
 	}
 
 	protected createFormElement(): void {

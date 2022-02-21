@@ -5,7 +5,6 @@ export default class Today {
 
 	constructor() {
 		const date = new Date();
-		this.date = new Date().toISOString().split('T')[0];
 		this.date = `${date.getFullYear()}-${date.getMonth().toString().padStart(2, '0')}-${date
 			.getDate()
 			.toString()
