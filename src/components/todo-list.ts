@@ -1,5 +1,5 @@
 import { SERVER_URL } from '../config';
-import { ITodo } from '../entities/todo-data.entity';
+import { ITodo } from '../entities/i-todo.entity';
 import Todo from './todo';
 
 export default class TodoList {
@@ -39,6 +39,9 @@ export default class TodoList {
 		if (targetEl.classList.contains('todo-delete-button')) {
 			// Delete button clicked
 			this.deleteTodo(todoEl);
+		} else if (targetEl.classList.contains('todo-edit-button')) {
+			// Edit button clicked
+			this.changeTodoTitle(todoEl);
 		} else if (targetEl instanceof HTMLInputElement && targetEl.type === 'checkbox') {
 			// Checkbox clicked
 			this.updateTodoCompleted(todoEl, targetEl.checked);
@@ -95,6 +98,34 @@ export default class TodoList {
 			completed ? todo.complete() : todo.unComplete();
 
 			this.updateLeftTodosEl();
+		} else console.error(res);
+	};
+
+	protected changeTodoTitle = async (todoEl: HTMLLIElement): Promise<void> => {
+		const todoTitleEl = todoEl.querySelector('.todo-title') as HTMLSpanElement;
+		const newTodoTitle = prompt(
+			'변경할 투두 제목을 입력해주세요.',
+			todoTitleEl.textContent ? todoTitleEl.textContent : ''
+		);
+
+		if (newTodoTitle && newTodoTitle !== todoTitleEl.textContent) {
+			this.updateTodoTitle(+todoEl.id, newTodoTitle);
+		}
+	};
+
+	protected updateTodoTitle = async (todoId: number, newTodoTitle: string): Promise<void> => {
+		const res: Response = await fetch(`${SERVER_URL}/todos/${todoId}`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json;charset=utf-8'
+			},
+			body: JSON.stringify({
+				title: newTodoTitle
+			})
+		});
+
+		if (res.ok) {
+			this.todos[todoId].updateTitle(newTodoTitle);
 		} else console.error(res);
 	};
 

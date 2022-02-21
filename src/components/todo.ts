@@ -1,4 +1,4 @@
-import { ITodo } from '../entities/todo-data.entity';
+import { ITodo } from '../entities/i-todo.entity';
 import TodoList from './todo-list';
 
 export default class Todo {
@@ -46,5 +46,12 @@ export default class Todo {
 		this.data.completed = false;
 
 		this.el.classList.remove('todo-completed');
+	}
+
+	public updateTitle(newTitle: string): void {
+		this.data.title = newTitle;
+
+		const titleEl = this.el.querySelector('.todo-title') as HTMLSpanElement;
+		titleEl.textContent = newTitle;
 	}
 }
