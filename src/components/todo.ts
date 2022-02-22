@@ -23,7 +23,10 @@ export default class Todo {
 			'afterbegin',
 			`
 		<span>
-			<input type="checkbox" class="todo-checkbox" ${this.data.completed ? 'checked' : ''} />
+			<label class="checkbox-container">
+				<input type="checkbox" class="todo-checkbox" ${this.data.completed ? 'checked' : ''} />
+				<span></span>
+			</label>
 			<span class="todo-title">${this.data.title}</span>
 		</span>
 		<span>

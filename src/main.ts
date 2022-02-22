@@ -1,6 +1,5 @@
 import Today from './components/today';
 import TodoList from './components/todo-list';
-import './style.css';
 
 document.addEventListener('DOMContentLoaded', () => {
 	const headerEl = document.querySelector('header') as HTMLElement;

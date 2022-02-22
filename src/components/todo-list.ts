@@ -12,6 +12,7 @@ export default class TodoList {
 	constructor() {
 		this.todosEl = document.createElement('ul');
 		this.leftTodosEl = document.createElement('span');
+		this.leftTodosEl.classList.add('left-todos');
 		this.formEl = document.createElement('form');
 
 		this.todos = [];
@@ -34,16 +35,18 @@ export default class TodoList {
 
 	protected clickEventHandler = (event: Event) => {
 		const targetEl = event.target as HTMLElement;
-		const todoEl = targetEl.parentElement?.parentElement as HTMLLIElement;
 
 		if (targetEl.classList.contains('todo-delete-button')) {
 			// Delete button clicked
+			const todoEl = targetEl.parentElement?.parentElement as HTMLLIElement;
 			this.deleteTodo(todoEl);
 		} else if (targetEl.classList.contains('todo-edit-button')) {
 			// Edit button clicked
+			const todoEl = targetEl.parentElement?.parentElement as HTMLLIElement;
 			this.changeTodoTitle(todoEl);
 		} else if (targetEl instanceof HTMLInputElement && targetEl.type === 'checkbox') {
 			// Checkbox clicked
+			const todoEl = targetEl.parentElement?.parentElement?.parentElement as HTMLLIElement;
 			this.updateTodoCompleted(todoEl, targetEl.checked);
 		}
 	};
