@@ -25,8 +25,8 @@ export default class TodoList {
 				}
 			})
 			.finally(() => {
-				this.updateLeftTodosEl();
-				this.createFormElement();
+				this.renderLeftTodos();
+				this.renderForm();
 			});
 	}
 
@@ -40,7 +40,7 @@ export default class TodoList {
 		} else if (targetEl.classList.contains('todo-edit-button')) {
 			// Edit button clicked
 			const todoEl = targetEl.parentElement?.parentElement as HTMLLIElement;
-			this.changeTodoTitle(todoEl);
+			this.updateTodoTitle(todoEl);
 		} else if (targetEl instanceof HTMLInputElement && targetEl.type === 'checkbox') {
 			// Checkbox clicked
 			const todoEl = targetEl.parentElement?.parentElement?.parentElement as HTMLLIElement;
@@ -57,7 +57,7 @@ export default class TodoList {
 		this.createTodo(todoData);
 
 		inputEl.value = '';
-		this.updateLeftTodosEl();
+		this.renderLeftTodos();
 	};
 
 	protected createTodo(todoData: ITodo): void {
@@ -76,10 +76,10 @@ export default class TodoList {
 		const todo = this.todos[+todoEl.id];
 		completed ? todo.complete() : todo.unComplete();
 
-		this.updateLeftTodosEl();
+		this.renderLeftTodos();
 	};
 
-	protected changeTodoTitle = async (todoEl: HTMLLIElement): Promise<void> => {
+	protected updateTodoTitle = async (todoEl: HTMLLIElement): Promise<void> => {
 		const todoTitleEl = todoEl.querySelector('.todo-title') as HTMLSpanElement;
 		const newTodoTitle = prompt(
 			'변경할 투두 제목을 입력해주세요.',
@@ -87,14 +87,10 @@ export default class TodoList {
 		);
 
 		if (newTodoTitle && newTodoTitle !== todoTitleEl.textContent) {
-			this.updateTodoTitle(+todoEl.id, newTodoTitle);
+			await todoApi.updateTitle(+todoEl.id, newTodoTitle);
+
+			this.todos[+todoEl.id].updateTitle(newTodoTitle);
 		}
-	};
-
-	protected updateTodoTitle = async (todoId: number, newTodoTitle: string): Promise<void> => {
-		await todoApi.updateTitle(todoId, newTodoTitle);
-
-		this.todos[todoId].updateTitle(newTodoTitle);
 	};
 
 	protected deleteTodo = async (todoEl: HTMLLIElement): Promise<void> => {
@@ -103,18 +99,18 @@ export default class TodoList {
 		delete this.todos[+todoEl.id];
 
 		todoEl.remove();
-		this.updateLeftTodosEl();
+		this.renderLeftTodos();
 	};
 
-	protected updateLeftTodosEl(): void {
-		/* TODO 2. 이렇게 계산 할지 leftTodo를 property로 만들어서 ++, -- 할지?
-		이렇게 하려면 Todo.data를 public으로 해야 하는데 괜찮나?
-		*/
-		const leftTodos = Object.values(this.todos).filter((todo) => !todo.data.completed).length;
-		this.leftTodosEl.textContent = `할 일이 ${leftTodos}개 남았습니다.`;
+	get leftTodos() {
+		return Object.values(this.todos).filter((todo) => !todo.data.completed).length;
 	}
 
-	protected createFormElement(): void {
+	protected renderLeftTodos(): void {
+		this.leftTodosEl.textContent = `할 일이 ${this.leftTodos}개 남았습니다.`;
+	}
+
+	protected renderForm(): void {
 		this.formEl.classList.add('box');
 		this.formEl.insertAdjacentHTML(
 			'afterbegin',
