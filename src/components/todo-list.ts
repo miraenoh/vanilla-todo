@@ -1,6 +1,6 @@
-import { SERVER_URL } from '../config';
 import { ITodo } from '../entities/i-todo.entity';
 import Todo from './todo';
+import todoApi from '../apis/todo.api';
 
 export default class TodoList {
 	public todosEl: HTMLUListElement;
@@ -8,16 +8,17 @@ export default class TodoList {
 	public formEl: HTMLFormElement;
 
 	protected todos: { [id: number]: Todo };
-
 	constructor() {
 		this.todosEl = document.createElement('ul');
 		this.leftTodosEl = document.createElement('span');
 		this.leftTodosEl.classList.add('left-todos');
 		this.formEl = document.createElement('form');
+		this.todosEl.addEventListener('click', this.clickEventHandler);
+		this.formEl.addEventListener('submit', this.addTodo);
 
 		this.todos = [];
-
-		this.getTodosData()
+		todoApi
+			.getAll()
 			.then((todosData) => {
 				for (const todoData of todosData) {
 					this.createTodo(todoData);
@@ -26,10 +27,6 @@ export default class TodoList {
 			.finally(() => {
 				this.updateLeftTodosEl();
 				this.createFormElement();
-
-				// TODO 1. eventListener를 todosEl에 등록?
-				this.todosEl.addEventListener('click', this.clickEventHandler);
-				this.formEl.addEventListener('submit', this.addTodo);
 			});
 	}
 
@@ -56,23 +53,11 @@ export default class TodoList {
 
 		const inputEl = document.querySelector('#todo-title-input') as HTMLInputElement;
 
-		const res: Response = await fetch(`${SERVER_URL}/todos`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json;charset=utf-8'
-			},
-			body: JSON.stringify({
-				title: inputEl.value,
-				completed: false
-			})
-		});
-		if (res.ok) {
-			const todoData: ITodo = await res.json();
-			this.createTodo(todoData);
+		const todoData = await todoApi.add(inputEl.value);
+		this.createTodo(todoData);
 
-			inputEl.value = '';
-			this.updateLeftTodosEl();
-		} else console.error(res);
+		inputEl.value = '';
+		this.updateLeftTodosEl();
 	};
 
 	protected createTodo(todoData: ITodo): void {
@@ -86,22 +71,12 @@ export default class TodoList {
 		todoEl: HTMLLIElement,
 		completed: boolean
 	): Promise<void> => {
-		const res: Response = await fetch(`${SERVER_URL}/todos/${todoEl.id}`, {
-			method: 'PATCH',
-			headers: {
-				'Content-Type': 'application/json;charset=utf-8'
-			},
-			body: JSON.stringify({
-				completed
-			})
-		});
+		await todoApi.updateCompleted(todoEl.id, completed);
 
-		if (res.ok) {
-			const todo = this.todos[+todoEl.id];
-			completed ? todo.complete() : todo.unComplete();
+		const todo = this.todos[+todoEl.id];
+		completed ? todo.complete() : todo.unComplete();
 
-			this.updateLeftTodosEl();
-		} else console.error(res);
+		this.updateLeftTodosEl();
 	};
 
 	protected changeTodoTitle = async (todoEl: HTMLLIElement): Promise<void> => {
@@ -117,41 +92,19 @@ export default class TodoList {
 	};
 
 	protected updateTodoTitle = async (todoId: number, newTodoTitle: string): Promise<void> => {
-		const res: Response = await fetch(`${SERVER_URL}/todos/${todoId}`, {
-			method: 'PATCH',
-			headers: {
-				'Content-Type': 'application/json;charset=utf-8'
-			},
-			body: JSON.stringify({
-				title: newTodoTitle
-			})
-		});
+		await todoApi.updateTitle(todoId, newTodoTitle);
 
-		if (res.ok) {
-			this.todos[todoId].updateTitle(newTodoTitle);
-		} else console.error(res);
+		this.todos[todoId].updateTitle(newTodoTitle);
 	};
 
 	protected deleteTodo = async (todoEl: HTMLLIElement): Promise<void> => {
-		const res: Response = await fetch(`${SERVER_URL}/todos/${todoEl.id}`, { method: 'DELETE' });
-		if (res.ok) {
-			delete this.todos[+todoEl.id];
-			console.log(this.todos);
+		await todoApi.delete(todoEl.id);
 
-			todoEl.remove();
-			this.updateLeftTodosEl();
-		} else console.error(res);
+		delete this.todos[+todoEl.id];
+
+		todoEl.remove();
+		this.updateLeftTodosEl();
 	};
-
-	protected async getTodosData(): Promise<ITodo[]> {
-		const res: Response = await fetch(`${SERVER_URL}/todos`);
-		if (res.ok) {
-			return await res.json();
-		} else {
-			console.error(res);
-			return [];
-		}
-	}
 
 	protected updateLeftTodosEl(): void {
 		/* TODO 2. 이렇게 계산 할지 leftTodo를 property로 만들어서 ++, -- 할지?
